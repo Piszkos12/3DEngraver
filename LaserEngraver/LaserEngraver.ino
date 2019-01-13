@@ -25,6 +25,11 @@
  *        [3] -> D4 : GPIO02
  */
 
+#include <ESP8266WiFi.h>
+#include <WiFiClient.h>
+#include <ESP8266WebServer.h>
+#include <ESP8266mDNS.h>
+
 // Beatrix
 #define Beatrix 16
 
@@ -40,7 +45,14 @@
 #define Bob3 00
 #define Bob4 02
 
+ESP8266WebServer server(80);
+
+const char* ssid     = "Anyad Picsaja";
+const char* password = "muslinca";
+
 const int NBSTEPS = 4095; // 360°
+const int period = 10; // wait milliseconds in one step = 100Hz by default
+
 int AliceStep = 0;
 int BobStep = 0;
 
@@ -56,12 +68,46 @@ int stepsMatrix[8][4] = {
   {HIGH, LOW,  LOW,  LOW},
   {HIGH, LOW,  LOW,  HIGH}
 }; 
- 
+
+unsigned long time_now = 0;
+
 void setup() {
   Serial.begin(9600);
+  while (!Serial) {}
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to ");
+  Serial.print(ssid);
+  int i = 0;
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(100);
+    Serial.print('.');
+  }
   Serial.println();
-  Serial.println("Starting...");
-  
+  Serial.println("Connection established!");  
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());    
+
+  server.on("/fastForwardAlice", [](){
+    server.send(200, "text/plain", "fastForwardAlice");
+    fastForwardAlice(server.arg("steps").toInt());
+    writeAlice(outArrayHlt);
+  });
+  server.on("/fastBackwardAlice", [](){
+    server.send(200, "text/plain", "fastBackwardAlice");
+    fastBackwardAlice(server.arg("steps").toInt());
+    writeAlice(outArrayHlt);
+  });
+  server.on("/fastForwardBob", [](){
+    server.send(200, "text/plain", "fastForwardBob");
+    fastForwardBob(server.arg("steps").toInt());
+    writeBob(outArrayHlt);
+  });
+  server.on("/fastBackwardBob", [](){
+    server.send(200, "text/plain", "fastBackwardBob");
+    fastBackwardBob(server.arg("steps").toInt());
+    writeBob(outArrayHlt);
+  });
+
   pinMode(Beatrix, OUTPUT);
   pinMode(Alice1, OUTPUT);
   pinMode(Alice2, OUTPUT);
@@ -74,6 +120,8 @@ void setup() {
 
   writeAlice(outArrayHlt);
   writeBob(outArrayHlt);
+
+  server.begin();
 }
 
 void writeAlice(int outArray[4]) {
@@ -122,5 +170,40 @@ void stepBackwardBob() {
   writeBob(stepsMatrix[BobStep]);
 }
 
+void fastForwardAlice(int steps) {
+  for (int i=1; i <= steps; i++){
+    stepForwardAlice();
+    delay(1);
+  }
+}
+
+void fastForwardBob(int steps) {
+  for (int i=1; i <= steps; i++){
+    stepForwardBob();
+    delay(1);
+  }
+}
+
+void fastBackwardAlice(int steps) {
+  for (int i=1; i <= steps; i++){
+    stepBackwardAlice();
+    delay(1);
+  }
+}
+
+void fastBackwardBob(int steps) {
+  for (int i=1; i <= steps; i++){
+    stepBackwardBob();
+    delay(1);
+  }
+}
+
 void loop() {
+  server.handleClient();
+/*
+  time_now = millis();
+  stepForwardAlice();
+  stepForwardBob();
+  while(millis() < time_now + period) {}
+*/
 }
