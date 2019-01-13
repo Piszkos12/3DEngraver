@@ -28,7 +28,6 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
 
 // Beatrix
 #define Beatrix 16
@@ -51,7 +50,16 @@ const char* ssid     = "Anyad Picsaja";
 const char* password = "muslinca";
 
 const int NBSTEPS = 4095; // 360°
-const int period = 10; // wait milliseconds in one step = 100Hz by default
+int period = 10; // wait milliseconds in one step = 100Hz by default
+
+int pageTop = 0;
+int pageBottom = 0;
+int pageLeft = 0;
+int pageRight = 0;
+int thisTop = 0;
+int thisBottom = 0;
+int thisLeft = 0;
+int thisRight = 0;
 
 int AliceStep = 0;
 int BobStep = 0;
@@ -72,6 +80,19 @@ int stepsMatrix[8][4] = {
 unsigned long time_now = 0;
 
 void setup() {
+  pinMode(Beatrix, OUTPUT);
+  pinMode(Alice1, OUTPUT);
+  pinMode(Alice2, OUTPUT);
+  pinMode(Alice3, OUTPUT);
+  pinMode(Alice4, OUTPUT);
+  pinMode(Bob1, OUTPUT);
+  pinMode(Bob2, OUTPUT);
+  pinMode(Bob3, OUTPUT);
+  pinMode(Bob4, OUTPUT);
+
+  writeAlice(outArrayHlt);
+  writeBob(outArrayHlt);
+
   Serial.begin(9600);
   while (!Serial) {}
   WiFi.begin(ssid, password);
@@ -87,6 +108,14 @@ void setup() {
   Serial.print("IP address: ");
   Serial.println(WiFi.localIP());    
 
+  server.on("/BeatrixOn", [](){
+    server.send(200, "text/plain", "BeatrixOn");
+    BeatrixOn();
+  });
+  server.on("/BeatrixOff", [](){
+    server.send(200, "text/plain", "BeatrixOff");
+    BeatrixOff();
+  });
   server.on("/fastForwardAlice", [](){
     server.send(200, "text/plain", "fastForwardAlice");
     fastForwardAlice(server.arg("steps").toInt());
@@ -107,21 +136,79 @@ void setup() {
     fastBackwardBob(server.arg("steps").toInt());
     writeBob(outArrayHlt);
   });
-
-  pinMode(Beatrix, OUTPUT);
-  pinMode(Alice1, OUTPUT);
-  pinMode(Alice2, OUTPUT);
-  pinMode(Alice3, OUTPUT);
-  pinMode(Alice4, OUTPUT);
-  pinMode(Bob1, OUTPUT);
-  pinMode(Bob2, OUTPUT);
-  pinMode(Bob3, OUTPUT);
-  pinMode(Bob4, OUTPUT);
-
-  writeAlice(outArrayHlt);
-  writeBob(outArrayHlt);
+  server.on("/setPeriod", [](){
+    server.send(200, "text/plain", "setPeriod");
+    period=server.arg("period").toInt();
+  });
+  server.on("/do", [](){
+    String job=server.arg("job");
+    int joblen=job.length()-1;
+    for (int i=0; i <= joblen; i++) {
+      time_now = millis();
+      // "WASD" directions
+      switch (job.charAt(i)) {
+        case 'B': // Power on Beatrix
+          BeatrixOn();
+          break;
+        case 'b': // Switch off Beatrix
+          BeatrixOff();
+          break;
+        case 'w': // UP
+          stepBackwardBob();
+          delay(period);
+          break;
+        case 'x': // DOWN
+          stepForwardBob();
+          delay(period);
+          break;
+        case 'a': // LEFT
+          stepBackwardAlice();
+          delay(period);
+          break;
+        case 'd': // RIGHT
+          stepForwardAlice();
+          delay(period);
+          break;
+        case 'e': // UPRIGHT
+          stepBackwardBob();
+          stepForwardAlice();
+          delay(period);
+          break;
+        case 'c': // DOWNRIGHT
+          stepForwardBob();
+          stepForwardAlice();
+          delay(period);
+          break;
+        case 'y': // DOWNLEFT
+          stepBackwardAlice();
+          stepForwardBob();
+          delay(period);
+          break;
+        case 'q': // TOPRIGHT
+          stepBackwardBob();
+          stepBackwardAlice();
+          delay(period);
+          break;
+        case 's': // wait
+          delay(period);
+          break;
+      }
+    }
+    BeatrixOff();
+    writeAlice(outArrayHlt);
+    writeBob(outArrayHlt);
+    server.send(200, "text/plain", "do");
+  });
 
   server.begin();
+}
+
+void BeatrixOn() {
+  digitalWrite(Beatrix, HIGH);
+}
+
+void BeatrixOff() {
+  digitalWrite(Beatrix, LOW);
 }
 
 void writeAlice(int outArray[4]) {

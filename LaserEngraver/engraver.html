@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta charset="utf-8">
+    <title>3D Engraver</title>
+    <meta name="viewport" content="user-scalable=no, width=device-width">
+    <script>
+        var ip='10.193.4.69';
+        function goUp() {
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open('GET', 'http://'+ip+'/fastBackwardBob?steps=100', true);
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4) {
+                    if (xmlhttp.status == 200) {
+                        document.getElementById('result').value=xmlhttp.responseText;
+                    }
+                }
+            };
+            xmlhttp.send();
+        }
+        function goDown() {
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open('GET', 'http://'+ip+'/fastForwardBob?steps=100', true);
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4) {
+                    if (xmlhttp.status == 200) {
+                        document.getElementById('result').value=xmlhttp.responseText;
+                    }
+                }
+            };
+            xmlhttp.send();
+        }
+        function goLeft() {
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open('GET', 'http://'+ip+'/fastBackwardAlice?steps=100', true);
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4) {
+                    if (xmlhttp.status == 200) {
+                        document.getElementById('result').value=xmlhttp.responseText;
+                    }
+                }
+            };
+            xmlhttp.send();
+        }
+        function goRight() {
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open('GET', 'http://'+ip+'/fastForwardAlice?steps=100', true);
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4) {
+                    if (xmlhttp.status == 200) {
+                        document.getElementById('result').value=xmlhttp.responseText;
+                    }
+                }
+            };
+            xmlhttp.send();
+        }
+        function sendJob() {
+            var xmlhttp = new XMLHttpRequest();
+                var formData = new FormData();
+                formData.append('job', document.getElementById("job").value);
+                xmlhttp.open('POST', 'http://'+ip+'/do', false);
+                xmlhttp.send(formData);
+        }
+    </script>
+</head>
+
+<body>
+    <table>
+        <tr>
+            <td></td>
+            <td><button style="height:32px;width:32px" onclick="goUp()">▲</button></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td><button style="height:32px;width:32px" onclick="goLeft()">◄</button></td>
+            <td></td>
+            <td><button style="height:32px;width:32px" onclick="goRight()">►</button></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><button style="height:32px;width:32px" onclick="goDown()">▼</button></td>
+            <td></td>
+        </tr>
+    </table>
+    <input type="text" style="width:100%" id="job">
+    <button onclick="sendJob()">Do</button>
+    <input type="text" style="width:100%" id="result">
+</body>
+
+</html>
